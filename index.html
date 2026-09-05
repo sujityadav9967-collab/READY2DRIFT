@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ready2Thrift | Curated Sustainable Fashion</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-black text-white font-sans antialiased selection:bg-white selection:text-black">
+
+    <!-- Announcement Bar -->
+    <div class="bg-zinc-900 text-zinc-400 text-[11px] py-2 text-center tracking-widest uppercase border-b border-zinc-900">
+        ⚡ SUSTAINABLE DROPS LIVE NOW • FREE SHIPPING OVER ₹999 • USE CODE: <span class="text-white font-bold">THRIFT10</span>
+    </div>
+
+    <!-- Navigation Bar -->
+    <header class="sticky top-0 z-50 bg-black/90 backdrop-blur-md border-b border-zinc-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            
+            <!-- Left: Menu Trigger -->
+            <div class="flex items-center space-x-4">
+                <button onclick="toggleMenu()" class="text-xl text-zinc-300 hover:text-white transition-colors focus:outline-none">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+
+            <!-- Center: High-Contrast Logo Box -->
+            <div class="absolute left-1/2 transform -translate-x-1/2">
+                <a href="#" onclick="router('home')" class="bg-white text-black px-4 py-2 font-black tracking-tighter uppercase text-lg sm:text-xl inline-block shadow-lg">
+                    READY<span class="text-zinc-600">2</span>THRIFT
+                </a>
+            </div>
+
+            <!-- Right: Icons -->
+            <div class="flex items-center space-x-6 text-zinc-300">
+                <button onclick="toggleSearch()" class="hover:text-white transition-colors" title="Search">
+                    <i class="fa-solid fa-magnifying-glass text-lg"></i>
+                </button>
+                <button onclick="router('wishlist')" class="relative hover:text-white transition-colors" title="Wishlist">
+                    <i class="fa-regular fa-heart text-lg"></i>
+                    <span id="wishlist-badge" class="absolute -top-2 -right-2 bg-white text-black font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center">0</span>
+                </button>
+                <button onclick="router('cart')" class="relative hover:text-white transition-colors" title="Cart">
+                    <i class="fa-solid fa-bag-shopping text-lg"></i>
+                    <span id="cart-badge" class="absolute -top-2 -right-2 bg-white text-black font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Side Menu Drawer -->
+    <div id="side-menu" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden transition-opacity duration-300">
+        <div class="absolute top-0 left-0 w-80 h-full bg-black border-r border-zinc-900 p-6 flex flex-col justify-between shadow-2xl animate-fade-in">
+            <div>
+                <div class="flex justify-between items-center mb-8 border-b border-zinc-900 pb-4">
+                    <span class="font-bold tracking-widest uppercase text-xs text-zinc-400">Navigation</span>
+                    <button onclick="toggleMenu()" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                
+                <nav class="space-y-4 text-sm font-medium tracking-wide">
+                    <a href="#" onclick="toggleMenu(); router('shop')" class="block text-white hover:text-zinc-400">🔥 All Drops Catalog</a>
+                    <a href="#" onclick="toggleMenu(); state.searchQuery='toy'; router('shop');" class="block text-zinc-400 hover:text-white pl-3">↳ Toys & Collectibles</a>
+                    <a href="#" onclick="toggleMenu(); state.searchQuery='accessories'; router('shop');" class="block text-zinc-400 hover:text-white pl-3">↳ Accessories</a>
+                    <a href="#" onclick="toggleMenu(); state.searchQuery='t-shirts'; router('shop');" class="block text-zinc-400 hover:text-white pl-3">↳ T-Shirts & Waffles</a>
+                    <a href="#" onclick="toggleMenu(); state.searchQuery='jeans'; router('shop');" class="block text-zinc-400 hover:text-white pl-3">↳ Jeans & Shirts</a>
+                    <div class="border-t border-zinc-900 pt-4 mt-4 space-y-3">
+                        <a href="#" onclick="toggleMenu(); router('tracking')" class="block text-zinc-300 hover:text-white">Track Order</a>
+                        <a href="#" onclick="toggleMenu(); router('blog')" class="block text-zinc-300 hover:text-white">Style Journal</a>
+                    </div>
+                </nav>
+            </div>
+
+            <div class="border-t border-zinc-900 pt-4">
+                <button onclick="googleAuthLogin()" class="w-full bg-white text-black hover:bg-zinc-200 py-3 px-4 font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all">
+                    <i class="fa-brands fa-google text-sm"></i> Continue with Google
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dynamic Container -->
+    <main id="app-container" class="min-h-screen"></main>
+
+    <!-- Footer -->
+    <footer class="bg-black border-t border-zinc-900 text-zinc-400 py-16 mt-20">
+        <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8 text-sm">
+            <div>
+                <h3 class="text-white font-black text-lg mb-4 tracking-tighter">READY2THRIFT</h3>
+                <p class="leading-relaxed text-xs text-zinc-500">Curating premium pre-loved streetwear, vintage apparel, and rare collectibles. Sustainable fashion for the culture.</p>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-4 uppercase tracking-widest text-xs">Quick Links</h4>
+                <ul class="space-y-2 text-xs">
+                    <li><a href="#" onclick="router('shop')" class="hover:text-white">Shop Catalog</a></li>
+                    <li><a href="#" onclick="router('tracking')" class="hover:text-white">Order Tracking</a></li>
+                    <li><a href="#" onclick="router('blog')" class="hover:text-white">Style Journal</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-4 uppercase tracking-widest text-xs">Customer Care</h4>
+                <ul class="space-y-2 text-xs">
+                    <li><a href="#" class="hover:text-white">Shipping & Returns</a></li>
+                    <li><a href="#" class="hover:text-white">FAQ</a></li>
+                    <li><a href="#" class="hover:text-white">Privacy Policy</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-4 uppercase tracking-widest text-xs">Stay in the Loop</h4>
+                <p class="mb-4 text-xs text-zinc-500">Get notified first when our fresh drops go live.</p>
+                <div class="flex">
+                    <input type="email" placeholder="Enter your email" class="bg-zinc-950 border border-zinc-800 px-3 py-2 text-xs w-full focus:outline-none focus:border-white text-white">
+                    <button class="bg-white text-black px-4 font-bold text-xs">Join</button>
+                </div>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 mt-16 pt-6 border-t border-zinc-900 text-[11px] text-zinc-600 flex flex-col sm:flex-row justify-between items-center">
+            <p>&copy; 2026 Ready2Thrift. All Rights Reserved. • <button onclick="router('admin-login')" class="text-zinc-400 hover:text-white underline">Admin Panel</button></p>
+            <div class="flex space-x-6 mt-4 sm:mt-0">
+                <a href="#" class="hover:text-white"><i class="fa-brands fa-instagram text-base"></i></a>
+                <a href="#" class="hover:text-white"><i class="fa-brands fa-whatsapp text-base"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Floating WhatsApp Support -->
+    <a href="https://wa.me/919876543210?text=Hey%20Ready2Thrift,%20I%20need%20help%20with..." target="_blank" class="fixed bottom-6 right-6 bg-emerald-600 hover:bg-emerald-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-50 transition-transform hover:scale-110">
+        <i class="fa-brands fa-whatsapp text-2xl"></i>
+    </a>
+
+    <!-- Core App Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
