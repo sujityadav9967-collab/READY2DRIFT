@@ -21,7 +21,7 @@
     <!-- Navigation Bar -->
     <header class="sticky top-0 z-50 bg-black/90 backdrop-blur-md border-b border-zinc-900">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-            
+
             <!-- Left: Menu Trigger -->
             <div class="flex items-center space-x-4">
                 <button onclick="toggleMenu()" class="text-xl text-zinc-300 hover:text-white transition-colors focus:outline-none">
@@ -38,7 +38,7 @@
 
             <!-- Right: Icons -->
             <div class="flex items-center space-x-6 text-zinc-300">
-                <button onclick="toggleSearch()" class="hover:text-white transition-colors" title="Search">
+                <button onclick="openSearch()" class="hover:text-white transition-colors" title="Search">
                     <i class="fa-solid fa-magnifying-glass text-lg"></i>
                 </button>
                 <button onclick="router('wishlist')" class="relative hover:text-white transition-colors" title="Wishlist">
@@ -53,6 +53,20 @@
         </div>
     </header>
 
+    <!-- Live Search Overlay -->
+    <div id="search-overlay" class="border-b border-zinc-900">
+        <div class="max-w-2xl mx-auto px-4 pt-24 pb-10">
+            <div class="flex items-center gap-4 mb-6">
+                <i class="fa-solid fa-magnifying-glass text-zinc-500"></i>
+                <input type="text" id="live-search-input" placeholder="Search jeans, tees, accessories..."
+                    class="w-full py-3 text-white placeholder-zinc-600"
+                    oninput="handleLiveSearch(event)" onkeydown="submitSearch(event)">
+                <button onclick="closeSearch()" class="text-zinc-500 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="search-results"></div>
+        </div>
+    </div>
+
     <!-- Side Menu Drawer -->
     <div id="side-menu" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden transition-opacity duration-300">
         <div class="absolute top-0 left-0 w-80 h-full bg-black border-r border-zinc-900 p-6 flex flex-col justify-between shadow-2xl animate-fade-in">
@@ -61,7 +75,7 @@
                     <span class="font-bold tracking-widest uppercase text-xs text-zinc-400">Navigation</span>
                     <button onclick="toggleMenu()" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
                 </div>
-                
+
                 <nav class="space-y-4 text-sm font-medium tracking-wide">
                     <a href="#" onclick="toggleMenu(); router('shop')" class="block text-white hover:text-zinc-400">🔥 All Drops Catalog</a>
                     <a href="#" onclick="toggleMenu(); state.searchQuery='toy'; router('shop');" class="block text-zinc-400 hover:text-white pl-3">↳ Toys & Collectibles</a>
@@ -131,6 +145,17 @@
     <a href="https://wa.me/919876543210?text=Hey%20Ready2Thrift,%20I%20need%20help%20with..." target="_blank" class="fixed bottom-6 right-6 bg-emerald-600 hover:bg-emerald-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-50 transition-transform hover:scale-110">
         <i class="fa-brands fa-whatsapp text-2xl"></i>
     </a>
+
+    <!-- Toast Popup Stack -->
+    <div id="toast-stack"></div>
+
+    <!-- Quick View Modal Popup -->
+    <div id="quickview-backdrop" onclick="if(event.target===this) closeQuickView()">
+        <div id="quickview-panel" class="fixed inset-x-4 top-1/2 -translate-y-1/2 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 max-w-2xl w-[calc(100%-2rem)] sm:w-full bg-black border border-zinc-800 p-6 sm:p-8 z-10">
+            <button onclick="closeQuickView()" class="absolute -top-3 -right-3 bg-white text-black w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-xs"></i></button>
+            <div id="quickview-body"></div>
+        </div>
+    </div>
 
     <!-- Core App Logic -->
     <script src="app.js"></script>
