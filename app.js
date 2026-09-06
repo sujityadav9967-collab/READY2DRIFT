@@ -32,23 +32,153 @@ function toggleMenu() {
 
 // Mock Google Authentication handler
 function googleAuthLogin() {
-    alert('Google Sign-Up popup triggered! (Integrated via Firebase Auth SDK)');
+    toast('Google sign-up triggered (wire this to Firebase Auth SDK).', 'fa-solid fa-circle-info');
     toggleMenu();
 }
 
-// Functional Search Handler
-function handleSearchInput(e) {
-    state.searchQuery = e.target.value.toLowerCase();
-    router('shop');
+// =====================================================================
+// TOAST NOTIFICATIONS — replaces alert() with a small popup that
+// slides in bottom-right and disappears on its own.
+// =====================================================================
+function toast(message, icon = 'fa-solid fa-check') {
+    const stack = document.getElementById('toast-stack');
+    if (!stack) { console.log(message); return; }
+
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = `<i class="${icon}"></i><span>${message}</span>`;
+    stack.appendChild(el);
+
+    // force reflow so the transition actually plays
+    requestAnimationFrame(() => el.classList.add('show'));
+
+    setTimeout(() => {
+        el.classList.remove('show');
+        el.classList.add('hide');
+        setTimeout(() => el.remove(), 400);
+    }, 2600);
 }
 
-function toggleSearch() {
-    let query = prompt("Search Ready2Thrift catalog (e.g., Jeans, Tee, Toy, Chain):");
-    if(query !== null) {
-        state.searchQuery = query.toLowerCase();
+// =====================================================================
+// LIVE SEARCH OVERLAY — replaces prompt()-based search
+// =====================================================================
+function openSearch() {
+    const overlay = document.getElementById('search-overlay');
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    renderSearchResults('');
+    setTimeout(() => document.getElementById('live-search-input').focus(), 300);
+}
+
+function closeSearch() {
+    const overlay = document.getElementById('search-overlay');
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function handleLiveSearch(e) {
+    renderSearchResults(e.target.value.toLowerCase().trim());
+}
+
+function renderSearchResults(query) {
+    const resultsBox = document.getElementById('search-results');
+    if (!query) {
+        resultsBox.innerHTML = `<p class="text-zinc-600 text-xs pt-6">Start typing to search jeans, tees, accessories, toys...</p>`;
+        return;
+    }
+    const matches = state.products.filter(p =>
+        p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query)
+    );
+    if (matches.length === 0) {
+        resultsBox.innerHTML = `<p class="text-zinc-600 text-xs pt-6">No matches for "${query}".</p>`;
+        return;
+    }
+    resultsBox.innerHTML = matches.slice(0, 6).map((p, i) => `
+        <div class="search-result-row flex items-center justify-between gap-4 py-3 border-b border-zinc-900 cursor-pointer group"
+             style="animation-delay:${i * 0.04}s"
+             onclick="closeSearch(); router('product-detail', ${p.id});">
+            <div class="flex items-center gap-4">
+                <img src="${p.image}" class="w-12 h-14 object-cover border border-zinc-800">
+                <div>
+                    <p class="text-sm text-zinc-200 group-hover:text-white">${p.name}</p>
+                    <p class="text-[11px] text-zinc-500">${p.category} • Size ${p.size}</p>
+                </div>
+            </div>
+            <span class="text-xs font-bold">₹${p.price}</span>
+        </div>
+    `).join('');
+}
+
+function submitSearch(e) {
+    if (e.key === 'Enter') {
+        state.searchQuery = e.target.value.toLowerCase().trim();
+        closeSearch();
         router('shop');
     }
+    if (e.key === 'Escape') closeSearch();
 }
+
+// =====================================================================
+// QUICK VIEW MODAL — popup preview without leaving the grid
+// =====================================================================
+function openQuickView(id) {
+    const p = state.products.find(item => item.id === id);
+    if (!p) return;
+    const backdrop = document.getElementById('quickview-backdrop');
+    document.getElementById('quickview-body').innerHTML = `
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div class="bg-zinc-950 aspect-[3/4] overflow-hidden border border-zinc-900">
+                <img src="${p.image}" class="w-full h-full object-cover">
+            </div>
+            <div class="flex flex-col">
+                <span class="text-[10px] uppercase tracking-widest bg-zinc-900 px-2.5 py-1 text-zinc-300 mb-3 inline-block w-fit">${p.condition}</span>
+                <h2 class="text-xl font-black uppercase tracking-tight mb-2">${p.name}</h2>
+                <p class="text-lg font-bold mb-4">₹${p.price}</p>
+                <p class="text-xs text-zinc-500 mb-6">Size: ${p.size} • ${p.category}</p>
+                <div class="mt-auto space-y-3">
+                    <button onclick="addToCart(${p.id})" class="w-full bg-white text-black uppercase tracking-widest font-bold py-3 text-xs hover:bg-zinc-200 transition-all">Add To Bag</button>
+                    <button onclick="closeQuickView(); router('product-detail', ${p.id});" class="w-full border border-zinc-800 text-zinc-300 uppercase tracking-widest font-bold py-3 text-xs hover:border-white hover:text-white transition-all">View Full Details</button>
+                </div>
+            </div>
+        </div>
+    `;
+    backdrop.classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeQuickView() {
+    document.getElementById('quickview-backdrop').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+// =====================================================================
+// SCROLL-REVEAL — IntersectionObserver adds .is-visible as elements
+// enter the viewport, and a light parallax drift on the hero image.
+// =====================================================================
+let revealObserver = null;
+
+function initScrollEffects() {
+    if (revealObserver) revealObserver.disconnect();
+
+    revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                revealObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' });
+
+    document.querySelectorAll('.reveal, .reveal-stagger').forEach(el => revealObserver.observe(el));
+}
+
+function handleHeroParallax() {
+    const hero = document.getElementById('hero-bg');
+    if (!hero) return;
+    const offset = window.scrollY * 0.25;
+    hero.style.transform = `translateY(${offset}px) scale(1.08)`;
+}
+window.addEventListener('scroll', handleHeroParallax, { passive: true });
 
 // Router Function to Switch Views Dynamically without Page Reload
 function router(viewName, param = null) {
@@ -93,6 +223,12 @@ function renderView(param) {
         default:
             container.innerHTML = renderHomeView();
     }
+
+    // Re-arm scroll-reveal + parallax for the freshly injected markup
+    requestAnimationFrame(() => {
+        initScrollEffects();
+        handleHeroParallax();
+    });
 }
 
 // --- VIEW TEMPLATES ---
@@ -103,7 +239,7 @@ function renderHomeView() {
             <!-- Hero Banner -->
             <section class="relative h-[85vh] flex items-center justify-center bg-black overflow-hidden border-b border-zinc-900">
                 <div class="absolute inset-0 z-0 opacity-30">
-                    <img src="https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=1600&auto=format&fit=crop" class="w-full h-full object-cover">
+                    <img id="hero-bg" src="https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=1600&auto=format&fit=crop" class="w-full h-full object-cover">
                 </div>
                 <div class="relative z-10 text-center px-4 max-w-3xl">
                     <span class="text-[10px] uppercase tracking-widest bg-white text-black font-bold px-3 py-1 mb-6 inline-block">New Drop Vol. 04</span>
@@ -113,14 +249,14 @@ function renderHomeView() {
                 </div>
             </section>
 
-            <!-- Categories Section (Balanced minimalist grid: Toys, Accessories, T-Shirts, Jeans) -->
-            <section class="max-w-5xl mx-auto px-4 py-20">
+            <!-- Categories Section -->
+            <section class="reveal max-w-5xl mx-auto px-4 py-20">
                 <div class="text-center mb-12">
                     <span class="text-[10px] uppercase tracking-widest text-zinc-500">Curated Collections</span>
                     <h2 class="text-xl sm:text-2xl font-bold uppercase tracking-widest mt-1">Shop By Category</h2>
                 </div>
-                
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+
+                <div class="reveal-stagger grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                     <div onclick="state.searchQuery='toy'; router('shop');" class="bg-zinc-950 border border-zinc-900 p-6 cursor-pointer hover:border-white transition-all group">
                         <i class="fa-solid fa-gamepad text-2xl mb-3 text-zinc-400 group-hover:text-white"></i>
                         <h3 class="font-bold uppercase tracking-wider text-xs">Toys</h3>
@@ -142,7 +278,7 @@ function renderHomeView() {
 
             <!-- Featured Collection -->
             <section class="max-w-7xl mx-auto px-4 py-12">
-                <div class="flex justify-between items-end mb-10 border-b border-zinc-900 pb-4">
+                <div class="reveal flex justify-between items-end mb-10 border-b border-zinc-900 pb-4">
                     <div>
                         <span class="text-[10px] uppercase tracking-widest text-zinc-500">Handpicked</span>
                         <h2 class="text-xl sm:text-2xl font-bold uppercase tracking-tight">Featured Drops</h2>
@@ -150,24 +286,34 @@ function renderHomeView() {
                     <button onclick="router('shop')" class="text-xs uppercase tracking-widest text-zinc-400 hover:text-white underline">View Catalog</button>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    ${state.products.slice(0, 4).map(p => `
-                        <div onclick="router('product-detail', ${p.id})" class="product-card group cursor-pointer">
-                            <div class="relative bg-zinc-950 aspect-[3/4] overflow-hidden mb-4 border border-zinc-900">
-                                <img src="${p.image}" class="w-full h-full object-cover">
-                                ${p.sold ? '<span class="absolute top-3 left-3 bg-red-600 text-white text-[9px] uppercase font-bold px-2.5 py-1">Sold Out</span>' : `<span class="absolute top-3 left-3 bg-black/80 backdrop-blur text-white text-[9px] uppercase font-bold px-2.5 py-1">${p.condition}</span>`}
-                            </div>
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <h3 class="font-medium text-xs text-zinc-200 group-hover:text-white">${p.name}</h3>
-                                    <p class="text-[11px] text-zinc-500 mt-1">Size: ${p.size} • ${p.category}</p>
-                                </div>
-                                <span class="font-bold text-xs">₹${p.price}</span>
-                            </div>
-                        </div>
-                    `).join('')}
+                <div class="reveal-stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    ${state.products.slice(0, 4).map(p => renderProductCard(p)).join('')}
                 </div>
             </section>
+        </div>
+    `;
+}
+
+// Shared product card markup with a quick-view popup trigger on hover
+function renderProductCard(p) {
+    return `
+        <div class="product-card group relative cursor-pointer">
+            <div onclick="router('product-detail', ${p.id})" class="relative bg-zinc-950 aspect-[3/4] overflow-hidden mb-4 border border-zinc-900">
+                <img src="${p.image}" class="w-full h-full object-cover">
+                ${p.sold ? '<span class="absolute top-3 left-3 bg-red-600 text-white text-[9px] uppercase font-bold px-2.5 py-1">Sold Out</span>' : `<span class="absolute top-3 left-3 bg-black/80 backdrop-blur text-white text-[9px] uppercase font-bold px-2.5 py-1">${p.condition}</span>`}
+                <button onclick="event.stopPropagation(); openQuickView(${p.id});"
+                    class="absolute bottom-3 right-3 bg-white text-black w-9 h-9 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300"
+                    title="Quick view">
+                    <i class="fa-solid fa-eye text-xs"></i>
+                </button>
+            </div>
+            <div onclick="router('product-detail', ${p.id})" class="flex justify-between items-start">
+                <div>
+                    <h3 class="font-medium text-xs text-zinc-200 group-hover:text-white">${p.name}</h3>
+                    <p class="text-[11px] text-zinc-500 mt-1">Size: ${p.size} • ${p.category}</p>
+                </div>
+                <span class="font-bold text-xs">₹${p.price}</span>
+            </div>
         </div>
     `;
 }
@@ -175,8 +321,8 @@ function renderHomeView() {
 function renderShopView() {
     let filteredProducts = state.products;
     if (state.searchQuery) {
-        filteredProducts = state.products.filter(p => 
-            p.name.toLowerCase().includes(state.searchQuery) || 
+        filteredProducts = state.products.filter(p =>
+            p.name.toLowerCase().includes(state.searchQuery) ||
             p.category.toLowerCase().includes(state.searchQuery)
         );
     }
@@ -187,31 +333,17 @@ function renderShopView() {
                 <h1 class="text-2xl font-black uppercase tracking-tight">Catalog / All Drops</h1>
                 ${state.searchQuery ? `<button onclick="state.searchQuery=''; router('shop');" class="text-xs underline text-zinc-400 hover:text-white">Clear Filter ("${state.searchQuery}")</button>` : ''}
             </div>
-            
+
             <!-- Filters Bar -->
-            <div class="bg-zinc-950 p-4 border border-zinc-900 mb-8 flex flex-wrap gap-4 items-center justify-between text-xs">
+            <div class="reveal bg-zinc-950 p-4 border border-zinc-900 mb-8 flex flex-wrap gap-4 items-center justify-between text-xs">
                 <input type="text" placeholder="Search catalog..." value="${state.searchQuery}" oninput="handleSearchInput(event)" class="bg-black border border-zinc-800 px-3 py-2 text-white text-xs focus:outline-none focus:border-white w-full sm:w-64">
                 <span class="text-zinc-500">Showing ${filteredProducts.length} sustainable items</span>
             </div>
 
             <!-- Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                ${filteredProducts.length === 0 ? `<p class="text-zinc-500 col-span-4 text-center py-20">No items found matching your search.</p>` : 
-                  filteredProducts.map(p => `
-                    <div onclick="router('product-detail', ${p.id})" class="product-card group cursor-pointer">
-                        <div class="relative bg-zinc-950 aspect-[3/4] overflow-hidden mb-4 border border-zinc-900">
-                            <img src="${p.image}" class="w-full h-full object-cover">
-                            ${p.sold ? '<span class="absolute top-3 left-3 bg-red-600 text-white text-[9px] uppercase font-bold px-2.5 py-1">Sold Out</span>' : `<span class="absolute top-3 left-3 bg-black/80 backdrop-blur text-white text-[9px] uppercase font-bold px-2.5 py-1">${p.condition}</span>`}
-                        </div>
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h3 class="font-medium text-xs text-zinc-200 group-hover:text-white">${p.name}</h3>
-                                <p class="text-[11px] text-zinc-500 mt-1">Size: ${p.size} • ${p.category}</p>
-                            </div>
-                            <span class="font-bold text-xs">₹${p.price}</span>
-                        </div>
-                    </div>
-                `).join('')}
+            <div class="reveal-stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                ${filteredProducts.length === 0 ? `<p class="text-zinc-500 col-span-4 text-center py-20">No items found matching your search.</p>` :
+                  filteredProducts.map(p => renderProductCard(p)).join('')}
             </div>
         </div>
     `;
@@ -237,7 +369,7 @@ function renderProductDetailView(id) {
                     <span class="text-[10px] uppercase tracking-widest bg-zinc-900 px-2.5 py-1 text-zinc-300 mb-4 inline-block">${product.condition}</span>
                     <h1 class="text-2xl sm:text-3xl font-black uppercase tracking-tight mb-4">${product.name}</h1>
                     <p class="text-xl font-bold mb-6">₹${product.price}</p>
-                    
+
                     <div class="border-t border-b border-zinc-900 py-6 my-6 space-y-4 text-xs">
                         <div class="flex justify-between items-center">
                             <span class="text-zinc-500 uppercase tracking-wider">Select Size</span>
@@ -248,7 +380,7 @@ function renderProductDetailView(id) {
                     </div>
 
                     <div class="space-y-4">
-                        ${product.sold ? 
+                        ${product.sold ?
                             `<button disabled class="w-full bg-zinc-900 text-zinc-600 uppercase tracking-widest font-bold py-4 text-xs cursor-not-allowed">Sold Out</button>` :
                             `<button onclick="addToCart(${product.id})" class="w-full bg-white text-black uppercase tracking-widest font-bold py-4 text-xs hover:bg-zinc-200 transition-all">Add To Bag</button>`
                         }
@@ -263,7 +395,7 @@ function renderWishlistView() {
     return `
         <div class="max-w-7xl mx-auto px-4 py-12 animate-fade-in">
             <h1 class="text-2xl font-black uppercase tracking-tight mb-8">My Wishlist (${state.wishlist.length})</h1>
-            ${state.wishlist.length === 0 ? 
+            ${state.wishlist.length === 0 ?
                 `<div class="text-center py-20 bg-zinc-950 border border-zinc-900"><p class="text-zinc-500 mb-6 text-xs">Your wishlist is currently empty.</p><button onclick="router('shop')" class="bg-white text-black px-6 py-3 font-bold text-xs uppercase">Explore Drops</button></div>` :
                 `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     ${state.wishlist.map(p => `
@@ -294,7 +426,7 @@ function renderCartView() {
     return `
         <div class="max-w-4xl mx-auto px-4 py-12 animate-fade-in">
             <h1 class="text-2xl font-black uppercase tracking-tight mb-8">Your Shopping Bag</h1>
-            ${state.cart.length === 0 ? 
+            ${state.cart.length === 0 ?
                 `<div class="text-center py-20 bg-zinc-950 border border-zinc-900"><p class="text-zinc-500 mb-6 text-xs">Your bag is currently empty.</p><button onclick="router('shop')" class="bg-white text-black px-6 py-3 font-bold text-xs uppercase">Explore Drops</button></div>` :
                 `<div class="grid grid-cols-1 md:grid-cols-2 gap-12">
                     <div class="space-y-4">
@@ -316,7 +448,7 @@ function renderCartView() {
                         <div class="flex justify-between"><span class="text-zinc-500">Subtotal</span><span class="font-bold">₹${total}</span></div>
                         <div class="flex justify-between"><span class="text-zinc-500">Shipping</span><span class="font-bold text-emerald-500">FREE</span></div>
                         <div class="flex justify-between text-sm border-t border-zinc-900 pt-4"><span class="font-bold">Total</span><span class="font-black text-base">₹${total}</span></div>
-                        
+
                         <!-- UPI QR Box -->
                         <div class="bg-black p-4 border border-zinc-900 text-center space-y-3">
                             <p class="text-[10px] text-zinc-400 uppercase tracking-widest">Scan & Pay via any UPI App</p>
@@ -441,12 +573,18 @@ function renderAdminDashboardView() {
 
 // --- INTERACTION HANDLERS ---
 
+function handleSearchInput(e) {
+    state.searchQuery = e.target.value.toLowerCase();
+    router('shop');
+}
+
 function addToCart(id) {
     const product = state.products.find(p => p.id === id);
     if(product && !product.sold) {
         state.cart.push(product);
         document.getElementById('cart-badge').innerText = state.cart.length;
-        alert('Item successfully added to your shopping bag!');
+        closeQuickView();
+        toast(`${product.name} added to your bag.`, 'fa-solid fa-bag-shopping');
     }
 }
 
@@ -459,13 +597,13 @@ function removeFromCart(index) {
 function toggleWishlist(id) {
     const product = state.products.find(p => p.id === id);
     const index = state.wishlist.findIndex(item => item.id === id);
-    
+
     if(index > -1) {
         state.wishlist.splice(index, 1);
-        alert('Removed from your wishlist.');
+        toast('Removed from your wishlist.', 'fa-regular fa-heart');
     } else if(product) {
         state.wishlist.push(product);
-        alert('Added to your wishlist!');
+        toast('Added to your wishlist!', 'fa-solid fa-heart');
     }
     document.getElementById('wishlist-badge').innerText = state.wishlist.length;
 }
@@ -482,7 +620,7 @@ function verifyAdmin() {
     if(pass === 'admin123') {
         router('admin-dashboard');
     } else {
-        alert('Incorrect password! Try "admin123"');
+        toast('Incorrect password. Try "admin123".', 'fa-solid fa-triangle-exclamation');
     }
 }
 
