@@ -21,7 +21,7 @@
     transform: scale(1.04);
 }
 
-/* Fade In Animation */
+/* Fade In Animation (used on full view swaps) */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
@@ -29,4 +29,165 @@
 
 .animate-fade-in {
     animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ===================================================================
+   SCROLL-REVEAL — elements fade/rise into place as they enter view.
+   Start hidden, JS adds .is-visible via IntersectionObserver.
+=================================================================== */
+.reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+}
+.reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+/* stagger children of a revealing grid so items don't pop together */
+.reveal-stagger > * {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal-stagger.is-visible > * {
+    opacity: 1;
+    transform: translateY(0);
+}
+.reveal-stagger.is-visible > *:nth-child(1) { transition-delay: 0.02s; }
+.reveal-stagger.is-visible > *:nth-child(2) { transition-delay: 0.08s; }
+.reveal-stagger.is-visible > *:nth-child(3) { transition-delay: 0.14s; }
+.reveal-stagger.is-visible > *:nth-child(4) { transition-delay: 0.2s; }
+.reveal-stagger.is-visible > *:nth-child(5) { transition-delay: 0.26s; }
+.reveal-stagger.is-visible > *:nth-child(6) { transition-delay: 0.32s; }
+.reveal-stagger.is-visible > *:nth-child(7) { transition-delay: 0.38s; }
+.reveal-stagger.is-visible > *:nth-child(8) { transition-delay: 0.44s; }
+.reveal-stagger.is-visible > *:nth-child(n+9) { transition-delay: 0.48s; }
+
+@media (prefers-reduced-motion: reduce) {
+    .reveal, .reveal-stagger > * {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+}
+
+/* Hero: subtle scroll parallax on the background image */
+#hero-bg {
+    transition: transform 0.05s linear;
+    will-change: transform;
+}
+
+/* ===================================================================
+   SEARCH OVERLAY — full-panel search that drops down under the header
+=================================================================== */
+#search-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 60;
+    background: rgba(0,0,0,0.97);
+    backdrop-filter: blur(10px);
+    transform: translateY(-100%);
+    opacity: 0;
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.35s ease;
+    pointer-events: none;
+    max-height: 100vh;
+    overflow-y: auto;
+}
+#search-overlay.open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+#search-overlay input#live-search-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #27272a;
+    font-size: 1.5rem;
+    letter-spacing: -0.01em;
+}
+#search-overlay input#live-search-input:focus {
+    outline: none;
+    border-bottom-color: #ffffff;
+}
+.search-result-row {
+    opacity: 0;
+    transform: translateX(-6px);
+    animation: searchRowIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes searchRowIn {
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* ===================================================================
+   TOAST — small confirmation popup, replaces alert()
+=================================================================== */
+#toast-stack {
+    position: fixed;
+    bottom: 96px;
+    right: 24px;
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+.toast {
+    pointer-events: auto;
+    background: #ffffff;
+    color: #000000;
+    padding: 14px 18px;
+    min-width: 240px;
+    max-width: 320px;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    transform: translateX(120%);
+    opacity: 0;
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.3s ease;
+}
+.toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+.toast.hide {
+    transform: translateX(120%);
+    opacity: 0;
+}
+.toast i { font-size: 14px; }
+
+/* ===================================================================
+   QUICK VIEW MODAL POPUP
+=================================================================== */
+#quickview-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 65;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+#quickview-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+#quickview-panel {
+    transform: translateY(24px) scale(0.98);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.35s ease;
+}
+#quickview-backdrop.open #quickview-panel {
+    transform: translateY(0) scale(1);
+    opacity: 1;
 }
